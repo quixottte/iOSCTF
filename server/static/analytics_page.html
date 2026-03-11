@@ -1,0 +1,14 @@
+<!DOCTYPE html><html><head><title>CTF W5</title></head><body>
+<h2>Analytics SDK Challenge W5</h2>
+<p>An 'analytics SDK' bridge is registered in this WebView. It can capture localStorage.</p>
+<script>
+// The bridge is: window.webkit.messageHandlers.analyticsSDK
+// Call: analyticsSDK.postMessage({type: 'capture', target: 'localStorage'})
+// The session_token in localStorage is the flag.
+function triggerCapture() {
+    window.webkit.messageHandlers.analyticsSDK.postMessage({type: 'capture', target: 'localStorage'});
+}
+document.addEventListener('DOMContentLoaded', function() {
+    document.body.innerHTML += '<button onclick="triggerCapture()">Trigger SDK Capture</button>';
+});
+</script></body></html>

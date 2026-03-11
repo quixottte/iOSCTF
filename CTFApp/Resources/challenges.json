@@ -1,0 +1,398 @@
+{
+  "version": "1.0",
+  "challenges": [
+    {
+      "id": "S1", "title": "Plaintext Confessions", "category": "storage", "difficulty": "basic",
+      "description": "The app stores a secret during startup. The developer chose the most convenient persistence API available. Convenience is the enemy of security.",
+      "objective": "Find the flag stored in the app's key-value storage.",
+      "hints": [
+        "iOS has a simple key-value store that survives app restarts. Designed for user preferences, not secrets.",
+        "On jailbroken: /private/var/mobile/Containers/Data/Application/<UUID>/Library/Preferences/<bundle-id>.plist",
+        "On non-jailbroken: use iMazing > Apps > App Data > Library > Preferences"
+      ],
+      "flag_hash": "6e89eed633cb34d8aeb1e411c29da503fd390672a8cfc1efeebd8701857ccb96",
+      "requires_jailbreak": false, "server_challenge": false,
+      "tags": ["NSUserDefaults", "storage", "plist"], "tools": ["iMazing", "plutil", "objection"]
+    },
+    {
+      "id": "S2", "title": "The Forgotten Plist", "category": "storage", "difficulty": "basic",
+      "description": "Classic developer mistake: credentials written to the Documents directory for easy debugging. Never cleaned up before shipping.",
+      "objective": "Find the config file left in the app's Documents folder.",
+      "hints": [
+        "Check the app's Documents directory — accessible via iTunes File Sharing if UIFileSharingEnabled is set.",
+        "On jailbroken: /private/var/mobile/Containers/Data/Application/<UUID>/Documents/",
+        "The file is a property list: plutil -p config.plist"
+      ],
+      "flag_hash": "9877db8a6c4d4e8a5db017458b05b98d5191518872ca1279fa758c027793c566",
+      "requires_jailbreak": false, "server_challenge": false,
+      "tags": ["plist", "documents", "file-system"], "tools": ["iMazing", "Finder", "plutil"]
+    },
+    {
+      "id": "S3", "title": "SQLite Diary", "category": "storage", "difficulty": "basic",
+      "description": "The app logs events to a local SQLite database. Sensitive data ended up in the events table. No encryption. No access control.",
+      "objective": "Extract the flag from the app's SQLite database.",
+      "hints": [
+        "Look in Library/Application Support/ or Documents/ for .sqlite or .db files.",
+        "sqlite3 <file>.sqlite 'SELECT * FROM events;'",
+        "On jailbroken: find / -name '*.sqlite' 2>/dev/null | grep <bundle-id>"
+      ],
+      "flag_hash": "3fc0b27605a6c3a933f60f8c7a63366e6f8c7e5bc9d1c466577f87e2d44cda71",
+      "requires_jailbreak": false, "server_challenge": false,
+      "tags": ["sqlite", "database", "storage"], "tools": ["sqlite3", "DB Browser", "objection"]
+    },
+    {
+      "id": "S4", "title": "Keychain? Sure, But...", "category": "storage", "difficulty": "medium",
+      "description": "The developer did use the Keychain — good instinct. But they set kSecAttrAccessible to kSecAttrAccessibleAlways with no access control. Accessible even when device is locked.",
+      "objective": "Extract the flag from the Keychain using keychain-dumper or Objection.",
+      "hints": [
+        "objection -g <bundle-id> explore → ios keychain dump",
+        "keychain_dumper on jailbroken device",
+        "Look for key named 'ctf_s4_secret' in the dump"
+      ],
+      "flag_hash": "a84916ce24544cb95a4dc74590174cb48577c81f20e90b0c6854ddf23bad9e8f",
+      "requires_jailbreak": true, "server_challenge": false,
+      "tags": ["keychain", "kSecAttrAccessibleAlways"], "tools": ["Objection", "keychain-dumper", "Frida"]
+    },
+    {
+      "id": "S5", "title": "CoreData Secrets", "category": "storage", "difficulty": "medium",
+      "description": "CoreData is an ORM, not a security layer. SecretEntity stores sensitive profile data in an unencrypted SQLite store.",
+      "objective": "Find and query the CoreData SQLite store to extract the flag from SecretEntity.",
+      "hints": [
+        "CoreData uses SQLite. Find the .sqlite file in Library/Application Support/",
+        "Table name: ZSECRETENTITY, column: ZFLAGVALUE (CoreData Z-prefix convention)",
+        "sqlite3 <store>.sqlite 'SELECT ZFLAGVALUE FROM ZSECRETENTITY;'"
+      ],
+      "flag_hash": "88d0c10a71570d533fc44234442279711a1f5a572a7c82d2a01b4a96f157535c",
+      "requires_jailbreak": true, "server_challenge": false,
+      "tags": ["coredata", "sqlite", "orm"], "tools": ["sqlite3", "Frida"]
+    },
+    {
+      "id": "S6", "title": "Console.app Knows Everything", "category": "storage", "difficulty": "medium",
+      "description": "NSLog writes to the system log. This developer logs everything, including secrets. The flag is NSLog'd when you visit the challenge screen.",
+      "objective": "Capture the NSLog output when navigating to the Log Leak challenge.",
+      "hints": [
+        "Xcode: Window > Devices and Simulators > Open Console",
+        "CLI: idevicesyslog | grep IOSCTF",
+        "The log fires when you tap this challenge cell in the app"
+      ],
+      "flag_hash": "c3656829ee703df579038a8074cc4b5d9a01a5b60b732f01196f8fd016ebb94a",
+      "requires_jailbreak": false, "server_challenge": false,
+      "tags": ["NSLog", "logging", "syslog"], "tools": ["Xcode Console", "idevicesyslog"]
+    },
+    {
+      "id": "S7", "title": "The Encrypted Lie", "category": "storage", "difficulty": "hard",
+      "description": "The app 'encrypts' its secrets with single-byte XOR. The key is a string constant in the binary, 12 bytes after the encrypted blob reference. Decryption is an exercise for the reader.",
+      "objective": "Find vault.enc, locate the XOR key in the binary via Ghidra, decrypt, extract the flag.",
+      "hints": [
+        "The encrypted file is at Documents/vault.enc",
+        "In Ghidra: search for string 'vault.enc' — XOR key is in the same function",
+        "Python: bytes(b ^ key for b in open('vault.enc','rb').read())"
+      ],
+      "flag_hash": "3bfe10afdab97f78b69e0a7952114b263f9ed797e149acf30cda256b4f0c67aa",
+      "requires_jailbreak": true, "server_challenge": false,
+      "tags": ["crypto", "xor", "ghidra", "reverse-engineering"], "tools": ["Ghidra", "Python"]
+    },
+    {
+      "id": "S8", "title": "Keychain Group Pivot", "category": "storage", "difficulty": "hard",
+      "description": "This app writes a secret to shared Keychain access group 'com.iosctf.shared'. Any app with the same Team ID can read it. A companion app is provided to demonstrate the pivot.",
+      "objective": "Build and install CTFCompanion, use it to read the shared Keychain group secret.",
+      "hints": [
+        "Access group: 'com.iosctf.shared' — both apps need same Team ID in entitlements",
+        "SecItemCopyMatching with kSecAttrAccessGroup = 'com.iosctf.shared'",
+        "Mirrors real-world app suite Keychain sharing vulnerabilities"
+      ],
+      "flag_hash": "36be08583e8f9501a500126f8a8e88fff01b11102a07672fd4ec2f1559ed3df2",
+      "requires_jailbreak": false, "server_challenge": false,
+      "tags": ["keychain", "access-group", "entitlements"], "tools": ["Xcode", "keychain-dumper"]
+    },
+    {
+      "id": "N1", "title": "Cleartext Credentials", "category": "network", "difficulty": "basic",
+      "description": "The app sends a login request over plain HTTP to the companion server. Credentials fly across the wire in cleartext.",
+      "objective": "Intercept the HTTP POST and find the flag in the server response.",
+      "hints": [
+        "Configure Burp proxy on Mac, set iPhone WiFi HTTP Proxy to your Mac IP:8080",
+        "Tap 'Authenticate' in this challenge — app sends POST /api/network/login over HTTP",
+        "Any credentials work — the server echoes back the flag in the response"
+      ],
+      "flag_hash": "4193e8ab4cc305a2afeef9c741ab5ab209a4bd2ca79ec54a45f23ce50abe673d",
+      "requires_jailbreak": false, "server_challenge": true, "server_endpoint": "/api/network/login",
+      "tags": ["http", "cleartext", "proxy"], "tools": ["Burp Suite", "mitmproxy"]
+    },
+    {
+      "id": "N2", "title": "Trust Everyone", "category": "network", "difficulty": "basic",
+      "description": "URLSession delegate accepts any certificate. Your Burp cert doesn't even need to be installed — the app trusts everything.",
+      "objective": "Intercept the HTTPS request without installing Burp's CA cert.",
+      "hints": [
+        "Use Burp Suite with default cert — the app won't reject it",
+        "GET /api/network/insecure-data — flag is in the response body",
+        "The NSURLSessionDelegate returns .useCredential for all auth challenges"
+      ],
+      "flag_hash": "85d76b96794b029896d859c126ca9df1cd0839fd346757084dc62d137b16500a",
+      "requires_jailbreak": false, "server_challenge": true, "server_endpoint": "/api/network/insecure-data",
+      "tags": ["tls", "certificate-validation", "NSURLSession"], "tools": ["Burp Suite"]
+    },
+    {
+      "id": "N3", "title": "Pinning? What Pinning?", "category": "network", "difficulty": "medium",
+      "description": "URLSession certificate pinning via didReceive challenge delegate. Checks cert hash against pinned value. Bypass at the ObjC runtime level.",
+      "objective": "Bypass URLSession certificate pinning using Objection or a custom Frida script.",
+      "hints": [
+        "objection -g com.iosctf.app explore --startup-command 'ios sslpinning disable'",
+        "Or hook: Security.SecTrustEvaluateWithError",
+        "Frida: hook the URLSessionDelegate method directly"
+      ],
+      "flag_hash": "378f4b5b7f8f8eefbb8952c99c8814f893e81e794a3a260055312f9010a484b2",
+      "requires_jailbreak": true, "server_challenge": true, "server_endpoint": "/api/network/pinned-data",
+      "tags": ["ssl-pinning", "frida", "objection"], "tools": ["Frida", "Objection", "Burp Suite"]
+    },
+    {
+      "id": "N4", "title": "The WebSocket Whisper", "category": "network", "difficulty": "medium",
+      "description": "App connects to a WebSocket. Auth token is base64(username:timestamp) — no signing. Token is replayable within 300 seconds.",
+      "objective": "Intercept or forge the WebSocket auth token to receive the flag.",
+      "hints": [
+        "Token format: base64(username + ':' + unix_timestamp)",
+        "wscat -c ws://<server>:8000/api/ws/challenge",
+        "Send: {\"token\": \"<base64_token>\"}"
+      ],
+      "flag_hash": "98c5be1b938e842457acbb8f2d15c2ff61ad8f0fce5c69436d565a1bf6189a5d",
+      "requires_jailbreak": false, "server_challenge": true, "server_endpoint": "/api/ws/challenge",
+      "tags": ["websocket", "token-replay", "base64"], "tools": ["Burp Suite", "wscat"]
+    },
+    {
+      "id": "N5", "title": "JWT Weak Secret", "category": "network", "difficulty": "medium",
+      "description": "Server issues HS256 JWTs with an embarrassingly weak secret. Crack it, forge admin:true, get the flag.",
+      "objective": "Crack the JWT secret, forge an admin token, submit to server.",
+      "hints": [
+        "Intercept token from GET /api/auth/token",
+        "hashcat -a 0 -m 16500 <jwt> rockyou.txt",
+        "Forge: jwt.encode({'user':'ctf','admin':True}, '<cracked_secret>', 'HS256')"
+      ],
+      "flag_hash": "9b8fbb4bcea816edc4484a7246418cb37026eae36e54c58c1a0b59dce5b62a4b",
+      "requires_jailbreak": false, "server_challenge": true, "server_endpoint": "/api/auth/token",
+      "tags": ["jwt", "hs256", "weak-secret"], "tools": ["jwt_tool", "hashcat", "Python"]
+    },
+    {
+      "id": "N6", "title": "Pinning Deeper", "category": "network", "difficulty": "hard",
+      "description": "SPKI public key pinning — pins the hash of the server certificate's SubjectPublicKeyInfo. Hook SecTrustEvaluateWithError at the C level.",
+      "objective": "Bypass SPKI-based pinning by hooking SecTrustEvaluateWithError with Frida.",
+      "hints": [
+        "Objection's generic SSL bypass may not work. Write a targeted script.",
+        "Interceptor.attach(Module.findExportByName('Security', 'SecTrustEvaluateWithError'), ...)",
+        "Force return value to 1 (true), set error param to null"
+      ],
+      "flag_hash": "c571b1890e850aae8e43c91d60d54d3bcfb416a89f9fc313fb0e785b99cff243",
+      "requires_jailbreak": true, "server_challenge": true, "server_endpoint": "/api/network/spki-pinned",
+      "tags": ["ssl-pinning", "spki", "SecTrustEvaluate", "frida"], "tools": ["Frida", "Burp Suite"]
+    },
+    {
+      "id": "N7", "title": "OAuth State CSRF", "category": "network", "difficulty": "hard",
+      "description": "OAuth 2.0 flow with state parameter present but never validated on callback. Classic CSRF. Steal an admin authorization code.",
+      "objective": "Manipulate the OAuth callback to receive a code for admin user. Exchange for their token.",
+      "hints": [
+        "Start OAuth flow, intercept the authorization request in Burp",
+        "Server issues codes per-user. Modify state= — callback binds code to admin.",
+        "POST /api/oauth/token — redirect_uri not validated against registration"
+      ],
+      "flag_hash": "937021c2aeac9e5232dbd38efd32b3bf9a88ffcdb94722222e63b39044679e63",
+      "requires_jailbreak": false, "server_challenge": true, "server_endpoint": "/api/oauth/authorize",
+      "tags": ["oauth", "csrf", "state-parameter"], "tools": ["Burp Suite", "Python"]
+    },
+    {
+      "id": "W1", "title": "URL Scheme Hijack", "category": "webview", "difficulty": "basic",
+      "description": "The app registers ctfapp:// and handles parameters without validation. Any app or web page can trigger it.",
+      "objective": "Craft a URL that triggers the scheme handler and reveals the flag.",
+      "hints": [
+        "Open Safari: ctfapp://reveal?key=admin",
+        "The handler reads the 'key' param — what value reveals the flag?",
+        "Or trigger programmatically: UIApplication.shared.open(URL(string:'ctfapp://reveal?key=...')!)"
+      ],
+      "flag_hash": "12043b55e7d3f2408330fc25efa2d6193ea780b45899523827fed60c19b8795f",
+      "requires_jailbreak": false, "server_challenge": false,
+      "tags": ["url-scheme", "deep-link", "input-validation"], "tools": ["Safari", "Frida"]
+    },
+    {
+      "id": "W2", "title": "postMessage Eavesdrop", "category": "webview", "difficulty": "basic",
+      "description": "WKWebView loads a local HTML page using window.webkit.messageHandlers. Handler name is in the HTML source.",
+      "objective": "Discover the message handler name and call it with correct payload to retrieve flag.",
+      "hints": [
+        "Extract IPA and inspect Resources/ for the bundled HTML file",
+        "window.webkit.messageHandlers.<name>.postMessage({action: 'getFlag'})",
+        "Use Safari DevTools or Frida to call the handler"
+      ],
+      "flag_hash": "7195bbe59fa5dfd0551907b047474dc934f852e95468133f19d729378e1d081a",
+      "requires_jailbreak": false, "server_challenge": false,
+      "tags": ["wkwebview", "postmessage", "js-bridge"], "tools": ["Frida", "Safari DevTools"]
+    },
+    {
+      "id": "W3", "title": "Bridge Exposed", "category": "webview", "difficulty": "medium",
+      "description": "WKWebView loads remote content and exposes a native handler called 'flagBridge'. No origin validation. Inject JS via MITM.",
+      "objective": "Inject JavaScript into the WebView response via Burp to call the flagBridge handler.",
+      "hints": [
+        "Intercept the page in Burp, inject into response body:",
+        "window.webkit.messageHandlers.flagBridge.postMessage({cmd:'retrieve', auth:'ctfuser'})",
+        "The handler alert()s the flag — hook document.write or alert() in Frida to capture it"
+      ],
+      "flag_hash": "e167ff228732141ea1d15abc4dcae5524a144054040637e63b92f8a96703dac5",
+      "requires_jailbreak": false, "server_challenge": true, "server_endpoint": "/static/bridge_page.html",
+      "tags": ["wkwebview", "js-bridge", "mitm", "js-injection"], "tools": ["Burp Suite", "Frida"]
+    },
+    {
+      "id": "W4", "title": "Universal Link Confusion", "category": "webview", "difficulty": "medium",
+      "description": "AASA file matches /* paths. Server has an open redirect at /redirect?url=. Chain them to hijack universal link parameters.",
+      "objective": "Exploit the AASA misconfiguration + open redirect to invoke the app with attacker-controlled params.",
+      "hints": [
+        "AASA at /.well-known/apple-app-site-association — check the path patterns",
+        "Open redirect: /redirect?url=<any_url> with no validation",
+        "Chain: https://server/redirect?url=https://server/challenge/W4?flag=steal"
+      ],
+      "flag_hash": "f6dca889de4b156f514a5f4098448d61b4d5759c7f4a41058b235b8ea037acb0",
+      "requires_jailbreak": false, "server_challenge": true, "server_endpoint": "/.well-known/apple-app-site-association",
+      "tags": ["universal-links", "aasa", "open-redirect"], "tools": ["Burp Suite", "Safari"]
+    },
+    {
+      "id": "W5", "title": "The FullStory Pattern", "category": "webview", "difficulty": "medium",
+      "description": "Analytics SDK initialized inside WKWebView exposes a JS interface callable from the loaded page with no origin validation. localStorage exfiltration is possible.",
+      "objective": "Exploit the analytics SDK bridge to exfiltrate the session token from WebView localStorage.",
+      "hints": [
+        "Handler name: 'analyticsSDK'",
+        "window.webkit.messageHandlers.analyticsSDK.postMessage({type:'capture', target:'localStorage'})",
+        "The session token stored in localStorage is the flag"
+      ],
+      "flag_hash": "bce1a4bc3d335955da0c1a90340650a83a0ab15b357452ab9433f9de03102e19",
+      "requires_jailbreak": false, "server_challenge": true, "server_endpoint": "/static/analytics_page.html",
+      "tags": ["sdk-bridge", "localstorage", "analytics", "fullstory-pattern"], "tools": ["Frida", "Burp Suite"]
+    },
+    {
+      "id": "W6", "title": "localStorage Theft", "category": "webview", "difficulty": "hard",
+      "description": "WKWebView with shared WKProcessPool and no storage partitioning. Inject a malicious iframe via MITM that reads parent localStorage across origins.",
+      "objective": "Inject an iframe via MITM to read the parent page's localStorage and exfiltrate the flag.",
+      "hints": [
+        "Inject: <iframe src='http://localhost:8000/static/steal.html'></iframe> into the response",
+        "steal.html: parent.postMessage(localStorage.getItem('ctf_w6_flag'), '*')",
+        "Capture postMessage with a second injected event listener or Frida hook"
+      ],
+      "flag_hash": "691f300218146e93e4f4e81465d0939eded336c9ffd003e86904a20c014cc2c5",
+      "requires_jailbreak": true, "server_challenge": true, "server_endpoint": "/static/shared_storage_page.html",
+      "tags": ["localstorage", "iframe", "wkprocesspool", "mitm"], "tools": ["Burp Suite", "Frida"]
+    },
+    {
+      "id": "W7", "title": "DeepLink Chain", "category": "webview", "difficulty": "hard",
+      "description": "A three-stage chain: URL scheme → WebView load → JS bridge. Each stage has a gate. Bypass them all. This mirrors a realistic multi-stage bug chain.",
+      "objective": "Chain URL scheme → WebView load → JS bridge call to extract the flag.",
+      "hints": [
+        "Stage 1: ctfapp://webload?url=<url> — only http://localhost:8000 is whitelisted",
+        "Stage 2: Page at /static/chain_page.html calls window.webkit.messageHandlers.chainBridge.postMessage",
+        "Stage 3: chainBridge checks HMAC header — key is in UserDefaults (found in S1)"
+      ],
+      "flag_hash": "1a2aac1a288f42a408b46c7c4f7faf1408545940b4e32567add7660cbac57322",
+      "requires_jailbreak": false, "server_challenge": true, "server_endpoint": "/static/chain_page.html",
+      "tags": ["chain", "url-scheme", "wkwebview", "js-bridge", "hmac"], "tools": ["Burp Suite", "Frida", "Python"]
+    },
+    {
+      "id": "B1", "title": "Strings Never Lie", "category": "binary", "difficulty": "basic",
+      "description": "The flag is a plaintext string constant in the binary. No obfuscation. Sitting in __TEXT waiting to be found.",
+      "objective": "Extract the flag using strings or Ghidra's string search.",
+      "hints": [
+        "Mac: strings CTFApp | grep IOSCTF",
+        "Ghidra: Search > For Strings, filter by 'IOSCTF'",
+        "rabin2 -z CTFApp | grep IOSCTF"
+      ],
+      "flag_hash": "ced3d898f5036480708475a3d54306c3af3810e1f6a4c6bb8e74ea368841f174",
+      "requires_jailbreak": false, "server_challenge": false,
+      "tags": ["strings", "static-analysis", "ghidra"], "tools": ["strings", "Ghidra", "radare2"]
+    },
+    {
+      "id": "B2", "title": "The ObjC Method", "category": "binary", "difficulty": "basic",
+      "description": "ObjC class CTFFlagStore has method -secretFlagForChallenge: returning the flag for the given ID. ObjC runtime metadata is never stripped.",
+      "objective": "Enumerate ObjC classes and call the method directly with Frida.",
+      "hints": [
+        "Frida: ObjC.classes.CTFFlagStore['- secretFlagForChallenge:']('B2')",
+        "class-dump -H CTFApp -o ./headers/ then grep for 'secretFlag'",
+        "All ObjC method names survive compilation and are enumerable at runtime"
+      ],
+      "flag_hash": "dce09db9774eb0ed5646f9ee4d1b7f703f416b43523f597607a90e7d7759f17a",
+      "requires_jailbreak": true, "server_challenge": false,
+      "tags": ["objc-runtime", "frida", "class-dump"], "tools": ["Frida", "class-dump"]
+    },
+    {
+      "id": "B3", "title": "Debugger? No Thanks", "category": "binary", "difficulty": "medium",
+      "description": "App calls ptrace(PT_DENY_ATTACH, 0, 0, 0) at startup. The flag is in a method only callable after bypassing this. Hook ptrace to neutralize it.",
+      "objective": "Hook ptrace in Frida to bypass PT_DENY_ATTACH, then call the flag-revealing method.",
+      "hints": [
+        "Interceptor.attach(Module.findExportByName(null, 'ptrace'), { onEnter: function(args) { if(args[0].toInt32() == 31) args[0] = ptr(0); }})",
+        "PT_DENY_ATTACH = 31",
+        "After bypassing: ObjC.classes.CTFAntiDebug['+ revealFlagIfSafe']()"
+      ],
+      "flag_hash": "a842621c8e036043107fdfaa2ed17122c6de785233c90014021a314e11dd6fd3",
+      "requires_jailbreak": true, "server_challenge": false,
+      "tags": ["anti-debug", "ptrace", "PT_DENY_ATTACH", "frida"], "tools": ["Frida", "LLDB"]
+    },
+    {
+      "id": "B4", "title": "Jailbreak Blindfold", "category": "binary", "difficulty": "medium",
+      "description": "Naive jailbreak detection: checks for /Applications/Cydia.app, /bin/bash, /.installed_unc0ver. Purely file-system based. Hook NSFileManager.",
+      "objective": "Bypass jailbreak detection and unlock the challenge content.",
+      "hints": [
+        "objection -g <bundle-id> explore → ios jailbreak disable",
+        "Frida: hook NSFileManager fileExistsAtPath: — return false for JB paths",
+        "Detection class: CTFJailbreakDetector — find method with class-dump"
+      ],
+      "flag_hash": "f0bd262e925c331e1e88150b91de76dce460167582a7e24c6c7de6aef7874d48",
+      "requires_jailbreak": true, "server_challenge": false,
+      "tags": ["jailbreak-detection", "bypass", "objection"], "tools": ["Objection", "Frida"]
+    },
+    {
+      "id": "B5", "title": "Class Dump Treasure Hunt", "category": "binary", "difficulty": "medium",
+      "description": "Flag split across three ObjC classes: CTFPart1, CTFPart2, CTFPart3. Each returns one fragment. The assembly order is in a binary string.",
+      "objective": "Find all three classes via class-dump, call each method, assemble the flag in the correct order.",
+      "hints": [
+        "class-dump -H CTFApp -o ./headers/ → search for CTFPart1/2/3",
+        "Each has: -(NSString *)fragment;",
+        "strings CTFApp | grep 'order:' — assembly order is there"
+      ],
+      "flag_hash": "524db117de245040151fef635188d75d72236304a93eef10cea48b63e006c292",
+      "requires_jailbreak": true, "server_challenge": false,
+      "tags": ["class-dump", "frida", "objc-runtime"], "tools": ["class-dump", "Frida", "strings"]
+    },
+    {
+      "id": "B6", "title": "The Swizzle", "category": "binary", "difficulty": "hard",
+      "description": "CTFVault -retrieveSecret always returns ACCESS_DENIED. The actual flag logic is gated behind [self isAuthorized] == YES. Swizzle isAuthorized to return YES.",
+      "objective": "Frida method swizzle to make isAuthorized return YES, then call retrieveSecret.",
+      "hints": [
+        "ObjC.classes.CTFVault['- isAuthorized'].implementation = ObjC.implement(method, function(self, sel) { return 1; })",
+        "Then: ObjC.classes.CTFVault.new()['- retrieveSecret']().toString()",
+        "This is the exact technique used in real authorization bypass bugs"
+      ],
+      "flag_hash": "7dadbb2fe8574c7ae504bffa83a544539aacf2488f7e56a0f2a83606767b41ef",
+      "requires_jailbreak": true, "server_challenge": false,
+      "tags": ["swizzling", "frida", "authorization-bypass"], "tools": ["Frida"]
+    },
+    {
+      "id": "B7", "title": "JB Detection: Advanced", "category": "binary", "difficulty": "hard",
+      "description": "Multi-layer JB detection: file checks, dyld image scan, Cydia substrate detection, fork() test, ObjC runtime class check. Each layer must be individually bypassed.",
+      "objective": "Defeat all detection layers. Write a single reusable Frida script that handles all of them.",
+      "hints": [
+        "Layer 1: NSFileManager fileExistsAtPath: hook",
+        "Layer 2: _dyld_get_image_name hook — return null for substrate/cydia paths",
+        "Layer 3: fork() hook — return -1 (JB can fork, stock cannot)",
+        "Layer 4: NSClassFromString('CydiaSubstrate') hook — return nil",
+        "Spawn mode: frida -U -f com.iosctf.app --no-pause -l bypass_all.js"
+      ],
+      "flag_hash": "d1c507c908a48370924dd7ad616ef6f22a8d57c330cdbbbd25d0626d7a429c18",
+      "requires_jailbreak": true, "server_challenge": false,
+      "tags": ["jailbreak-detection", "IOSSecuritySuite", "frida", "multi-layer", "dyld"], "tools": ["Frida"]
+    },
+    {
+      "id": "B8", "title": "FairPlay Ghost", "category": "binary", "difficulty": "hard",
+      "description": "Flag is decrypted at runtime using a device-derived key. Never written to disk. Exists in memory for ~2 seconds then zeroed. Dump it from memory in that window.",
+      "objective": "Hook the decryption function or scan memory for the flag pattern during the live window.",
+      "hints": [
+        "Hook CTFMemoryVault -decryptAndPresent — intercept return value before zeroing",
+        "Or memory scan: Process.enumerateRanges('r--').forEach(range => { Memory.scanSync(range.base, range.size, '49 4F 53 43 54 46 7B') })",
+        "49 4F 53 43 54 46 7B = IOSCTF{ in hex",
+        "Similar technique to FairPlay DRM memory dumping"
+      ],
+      "flag_hash": "fbe5c6333136d65d6f9847a40722ab506d33da703c9277c93c4c37f9cf16aa5a",
+      "requires_jailbreak": true, "server_challenge": false,
+      "tags": ["memory-forensics", "fairplay", "frida", "anti-forensics"], "tools": ["Frida", "LLDB"]
+    }
+  ]
+}

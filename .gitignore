@@ -1,0 +1,37 @@
+# Xcode
+CTFApp.xcodeproj/
+xcuserdata/
+*.xcworkspace/xcuserdata/
+DerivedData/
+build/
+*.pbxuser
+*.mode1v3
+*.mode2v3
+*.perspectivev3
+*.moved-aside
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+.build_ipa/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+__MACOSX/
+
+# Python
+server/.venv/
+server/__pycache__/
+*.pyc
+*.pyo
+.env
+
+# Server generated certs (regenerated on first run)
+server/.ctf_certs/
+
+# Spoilers — do not commit
+flag_reference.json
+scripts/frida/

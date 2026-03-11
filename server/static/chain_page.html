@@ -1,0 +1,16 @@
+<!DOCTYPE html><html><head><title>CTF W7 Chain</title></head><body>
+<h2>DeepLink Chain Stage 2 — W7</h2>
+<p>Stage 2 of 3. This page was loaded via ctfapp://webload. Now call the chainBridge.</p>
+<p>Stage 3: chainBridge checks a HMAC. The key is in UserDefaults (found in S1).</p>
+<script>
+function callChainBridge(hmac) {
+    window.webkit.messageHandlers.chainBridge.postMessage({
+        message: 'ctf_chain_request',
+        hmac: hmac
+    });
+}
+function receiveChainFlag(f) {
+    document.body.innerHTML += '<h1 style="color:green">CHAIN COMPLETE: ' + f + '</h1>';
+}
+// Compute HMAC in Python: hmac.new(key.encode(), 'ctf_chain_request'.encode(), sha256).hexdigest()
+</script></body></html>

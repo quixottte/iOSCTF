@@ -1,0 +1,9 @@
+<!DOCTYPE html><html><head><title>CTF W3</title></head><body>
+<h2>Bridge Challenge W3</h2>
+<p>This page is loaded in a WKWebView. The native bridge handler 'flagBridge' is exposed.</p>
+<p>MITM this page via Burp and inject JavaScript to call the bridge.</p>
+<script>
+// Injected JS example:
+// window.webkit.messageHandlers.flagBridge.postMessage({cmd: 'retrieve', auth: 'ctfuser'});
+function receiveFlag(f) { document.body.innerHTML += '<h1 style="color:green">Flag: ' + f + '</h1>'; }
+</script></body></html>

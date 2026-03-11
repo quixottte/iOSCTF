@@ -1,0 +1,140 @@
+# project.yml — XcodeGen configuration
+#
+# Generates a complete .xcodeproj from this spec.
+#
+# Setup:
+#   brew install xcodegen
+#   cd iOSCTF_clean && xcodegen generate
+#   open CTFApp.xcodeproj
+#
+# Then in Xcode:
+#   1. Signing & Capabilities → Team: select your Personal Team
+#   2. Bundle Identifier: change com.iosctf.app → com.YOURNAME.iosctf (must be unique)
+#   3. Build & Run on connected iPhone
+
+name: CTFApp
+options:
+  bundleIdPrefix:        com.iosctf
+  deploymentTarget:
+    iOS: "16.0"
+  xcodeVersion:          "15.0"
+  createIntermediateGroups: true
+
+settings:
+  base:
+    PRODUCT_BUNDLE_IDENTIFIER:           com.iosctf.app
+    IPHONEOS_DEPLOYMENT_TARGET:          16.0
+    SWIFT_VERSION:                       5.9
+    TARGETED_DEVICE_FAMILY:             "1,2"
+    ENABLE_BITCODE:                      NO
+    DEBUG_INFORMATION_FORMAT:            dwarf-with-dsym
+    # Bridging header — adjust path if you move the file
+    SWIFT_OBJC_BRIDGING_HEADER:          CTFApp/CTFApp-Bridging-Header.h
+    # Code signing — free personal team (7-day cert)
+    CODE_SIGN_STYLE:                     Automatic
+    DEVELOPMENT_TEAM:                    ""         # filled by Xcode after team selection
+    CODE_SIGN_IDENTITY:                  "Apple Development"
+    # SQLite (S3 challenge)
+    OTHER_LDFLAGS:                       "-lsqlite3"
+
+targets:
+  CTFApp:
+    type: application
+    platform: iOS
+    deploymentTarget: "16.0"
+    info:
+      path: CTFApp/Resources/Info.plist
+    entitlements:
+      path: CTFApp/CTFApp.entitlements
+    settings:
+      base:
+        PRODUCT_NAME: CTFApp
+        INFOPLIST_FILE: CTFApp/Resources/Info.plist
+        CODE_SIGN_ENTITLEMENTS: CTFApp/CTFApp.entitlements
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+    sources:
+      # App entry point — pure SwiftUI @main lifecycle
+      - path: CTFApp/CTFAppApp.swift
+      - path: CTFApp/CTFApp-Bridging-Header.h
+        buildPhase: none
+
+      # Core layer
+      - path: CTFApp/Core/Challenge.swift
+      - path: CTFApp/Core/ChallengeRegistry.swift
+      - path: CTFApp/Core/FlagValidator.swift
+      - path: CTFApp/Core/ProgressStore.swift
+      - path: CTFApp/Core/JailbreakDetector.swift
+
+      # UI layer
+      - path: CTFApp/UI/HomeView.swift
+      - path: CTFApp/UI/ChallengeListView.swift
+      - path: CTFApp/UI/ChallengeDetailView.swift
+      - path: CTFApp/UI/ServerSetupView.swift
+
+      # Storage vuln modules
+      - path: CTFApp/VulnModules/Storage/StorageChallengeSetup.swift
+      - path: CTFApp/VulnModules/Storage/CoreDataManager.swift
+
+      # Network vuln modules
+      - path: CTFApp/VulnModules/Network/NetworkChallenges.swift
+
+      # WebView vuln modules
+      - path: CTFApp/VulnModules/WebView/JSBridgeViewController.swift
+      - path: CTFApp/VulnModules/WebView/URLSchemeHandler.swift
+
+      # Binary vuln modules (ObjC)
+      - path: CTFApp/VulnModules/Binary/CTFFlagStore.h
+      - path: CTFApp/VulnModules/Binary/CTFFlagStore.m
+      - path: CTFApp/VulnModules/Binary/CTFAntiDebug.h
+      - path: CTFApp/VulnModules/Binary/CTFAntiDebug.m
+      - path: CTFApp/VulnModules/Binary/CTFVault.h
+      - path: CTFApp/VulnModules/Binary/CTFVault.m
+      - path: CTFApp/VulnModules/Binary/CTFMemoryVault.h
+      - path: CTFApp/VulnModules/Binary/CTFMemoryVault.m
+      - path: CTFApp/VulnModules/Binary/CTFPart1.h
+      - path: CTFApp/VulnModules/Binary/CTFPart1.m
+      - path: CTFApp/VulnModules/Binary/CTFPart2.h
+      - path: CTFApp/VulnModules/Binary/CTFPart2.m
+      - path: CTFApp/VulnModules/Binary/CTFPart3.h
+      - path: CTFApp/VulnModules/Binary/CTFPart3.m
+      - path: CTFApp/VulnModules/Binary/CTFJailbreakDetectorAdvanced.h
+      - path: CTFApp/VulnModules/Binary/CTFJailbreakDetectorAdvanced.m
+      - path: CTFApp/VulnModules/Binary/BinaryChallengeSetup.swift
+
+      # ── Resources (in sources with explicit buildPhase so they show in navigator) ──
+      - path: CTFApp/Resources/challenges.json
+        buildPhase: resources
+      - path: CTFApp/Resources/HTML/w2_challenge.html
+        buildPhase: resources
+      - path: CTFApp/Resources/Assets.xcassets
+        buildPhase: resources
+
+    dependencies:
+      # WebKit (WKWebView)
+      - sdk: WebKit.framework
+      # CryptoKit (FlagValidator SHA256, W7 HMAC)
+      - sdk: CryptoKit.framework
+      # CommonCrypto (CTFVault, CTFMemoryVault AES)
+      - sdk: Security.framework
+      # CoreData (S5)
+      - sdk: CoreData.framework
+
+schemes:
+  CTFApp:
+    build:
+      targets:
+        CTFApp: all
+    run:
+      config: Debug
+      # Launch arguments — useful for resetting challenge state during development
+      launchArguments:
+        - argument: -CTFResetProgress
+          isEnabled: false
+    test:
+      config: Debug
+    profile:
+      config: Release
+    analyze:
+      config: Debug
+    archive:
+      config: Release
